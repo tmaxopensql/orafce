@@ -1,6 +1,0 @@
-
-CREATE OR REPLACE FUNCTION oracle.sys_guid()
-RETURNS bytea
-AS 'MODULE_PATHNAME','orafce_sys_guid'
-LANGUAGE C VOLATILE;
-
