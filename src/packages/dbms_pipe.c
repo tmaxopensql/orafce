@@ -24,7 +24,7 @@
 #endif
 
 #include "shmmc.h"
-#include "pipe.h"
+#include "dbms_pipe.h"
 #include "orafce.h"
 #include "builtins.h"
 

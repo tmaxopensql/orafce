@@ -205,8 +205,10 @@ extern PGDLLEXPORT Datum plvdate_version(PG_FUNCTION_ARGS);
 extern PGDLLEXPORT Datum plvdate_days_inmonth(PG_FUNCTION_ARGS);
 extern PGDLLEXPORT Datum plvdate_isleapyear(PG_FUNCTION_ARGS);
 
+#if 0
 /* from plvlec.c */
 extern PGDLLEXPORT Datum plvlex_tokens(PG_FUNCTION_ARGS);
+#endif
 
 /* from plvstr.c */
 extern PGDLLEXPORT Datum plvstr_rvrs(PG_FUNCTION_ARGS);

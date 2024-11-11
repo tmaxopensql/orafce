@@ -1678,6 +1678,7 @@ AS 'MODULE_PATHNAME','dbms_utility_get_time'
 LANGUAGE C VOLATILE;
 COMMENT ON FUNCTION dbms_utility.get_time() IS 'Returns the number of hundredths of seconds that have elapsed since point in time';
 
+/*
 CREATE SCHEMA plvlex;
 
 CREATE FUNCTION plvlex.tokens(IN str text, IN skip_spaces bool, IN qualified_names bool,
@@ -1686,6 +1687,7 @@ RETURNS SETOF RECORD
 AS 'MODULE_PATHNAME','plvlex_tokens'
 LANGUAGE C IMMUTABLE STRICT;
 COMMENT ON FUNCTION plvlex.tokens(text,bool,bool) IS 'Parse SQL string';
+*/
 
 CREATE SCHEMA utl_file;
 CREATE DOMAIN utl_file.file_type integer;
@@ -3365,7 +3367,7 @@ GRANT USAGE ON SCHEMA dbms_output TO PUBLIC;
 GRANT USAGE ON SCHEMA plvsubst TO PUBLIC;
 GRANT SELECT ON dbms_pipe.db_pipes to PUBLIC;
 GRANT USAGE ON SCHEMA dbms_utility TO PUBLIC;
-GRANT USAGE ON SCHEMA plvlex TO PUBLIC;
+--GRANT USAGE ON SCHEMA plvlex TO PUBLIC;
 GRANT USAGE ON SCHEMA utl_file TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_assert TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_random TO PUBLIC;

@@ -25,7 +25,7 @@
 
 #include "orafce.h"
 #include "builtins.h"
-#include "pipe.h"
+#include "dbms_pipe.h"
 #include "shmmc.h"
 #include "utils/rel.h"
 
