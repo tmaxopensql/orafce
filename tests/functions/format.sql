@@ -38,6 +38,7 @@ BEGIN;
     --Tests for oracle.to_char(timestamp)-used to set the DATE output format
     SET search_path to oracle, "$user", public, pg_catalog;
     SET orafce.nls_date_format to default;
+    SET DateStyle = 'ISO, MDY';
     SELECT is(oracle.to_char(to_date('19-APR-16 21:41:48')), '2016-04-19 21:41:48');
     set orafce.nls_date_format='YY-MonDD HH24:MI:SS';
     SELECT is(oracle.to_char(to_date('14-Jan08 11:44:49+05:30')), '14-Jan08 11:44:49');
