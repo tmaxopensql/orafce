@@ -51,15 +51,15 @@ BEGIN;
     SELECT is(next_day(date '2003-08-06', 'SUNDAY'), '2003-08-10');
     SELECT is(next_day(date '2003-08-06', 'sun'), '2003-08-10');
     SELECT is(next_day(date '2003-08-06', 'sunAAA'), '2003-08-10');
-    SELECT is(next_day(date '2003-08-06', 3), '2003-08-13');
-    SELECT is(next_day(date '2003-08-06', 7), '2003-08-10');
+    SELECT is(next_day(date '2003-08-06', 4), '2003-08-13');
+    SELECT is(next_day(date '2003-08-06', 1), '2003-08-10');
 
     SELECT is(next_day('2003-08-06 11:22:33', 'WEDNESDAY'), '2003-08-13 11:22:33');
     SELECT is(next_day('2003-08-06 11:22:33', 'SUNDAY'), '2003-08-10 11:22:33');
     SELECT is(next_day('2003-08-06 11:22:33', 'sun'), '2003-08-10 11:22:33');
     SELECT is(next_day('2003-08-06 11:22:33', 'sunAAA'), '2003-08-10 11:22:33');
-    SELECT is(next_day('2003-08-06 11:22:33', 3), '2003-08-13 11:22:33');
-    SELECT is(next_day('2003-08-06 11:22:33', 7), '2003-08-10 11:22:33');
+    SELECT is(next_day('2003-08-06 11:22:33', 4), '2003-08-13 11:22:33');
+    SELECT is(next_day('2003-08-06 11:22:33', 1), '2003-08-10 11:22:33');
 
     -- Test months_between
     SELECT is(months_between(to_date('2003/01/01', 'yyyy/mm/dd'), to_date('2003/03/14', 'yyyy/mm/dd')), -2.41935483870968);
@@ -101,11 +101,11 @@ BEGIN;
     SELECT is(trunc(to_date('22-AUG-03', 'DD-MON-YY'), 'DDD'), to_date ('22-AUG-03', 'DD-MON-YY'));
     SELECT is(trunc(to_date('22-AUG-03', 'DD-MON-YY'), 'DAY'), to_date ('17-AUG-03', 'DD-MON-YY'));
 
-    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','YEAR'), '2004-01-01 00:00:00-08');
-    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','Q'), '2004-10-01 00:00:00-07');
-    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','MONTH'), '2004-10-01 00:00:00-07');
-    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','DDD'), '2004-10-19 00:00:00-07');
-    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','DAY'), '2004-10-17 00:00:00-07');
+    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','YEAR'), '2004-01-01 00:00:00');
+    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','Q'), '2004-10-01 00:00:00');
+    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','MONTH'), '2004-10-01 00:00:00');
+    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','DDD'), '2004-10-19 00:00:00');
+    SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','DAY'), '2004-10-17 00:00:00');
     SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','HH'), '2004-10-19 01:00:00-07');
     SELECT is(trunc(TIMESTAMP WITH TIME ZONE '2004-10-19 10:23:54+02','MI'), '2004-10-19 01:23:00-07');
 
