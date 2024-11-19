@@ -16,15 +16,15 @@
 #include "orafce.h"
 #include "mb/pg_wchar.h"
 
-PG_FUNCTION_INFO_V1(plvstr_instr2);
-PG_FUNCTION_INFO_V1(plvstr_instr3);
-PG_FUNCTION_INFO_V1(plvstr_instr4);
+PG_FUNCTION_INFO_V1(orafce_instr2);
+PG_FUNCTION_INFO_V1(orafce_instr3);
+PG_FUNCTION_INFO_V1(orafce_instr4);
 
-PG_FUNCTION_INFO_V1(oracle_substr2);
-PG_FUNCTION_INFO_V1(oracle_substr3);
+PG_FUNCTION_INFO_V1(orafce_substr2);
+PG_FUNCTION_INFO_V1(orafce_substr3);
 
-PG_FUNCTION_INFO_V1(oracle_substrb2);
-PG_FUNCTION_INFO_V1(oracle_substrb3);
+PG_FUNCTION_INFO_V1(orafce_substrb2);
+PG_FUNCTION_INFO_V1(orafce_substrb3);
 
 int orafce_substring_length_is_zero = ORAFCE_COMPATIBILITY_WARNING_ORACLE;
 
@@ -33,7 +33,7 @@ int orafce_substring_length_is_zero = ORAFCE_COMPATIBILITY_WARNING_ORACLE;
  *
  */
 static int
-ora_mb_strlen(text *str, char **sizes, int **positions)
+orafce_mb_strlen(text *str, char **sizes, int **positions)
 {
 	int r_len;
 	int cur_size = 0;
@@ -69,7 +69,7 @@ ora_mb_strlen(text *str, char **sizes, int **positions)
  * len < 0 means "length is not specified".
  */
 static text *
-ora_substr(Datum str, int start, int len)
+orafce_substr(Datum str, int start, int len)
 {
 	if (start == 0)
 		start = 1;	/* 0 is interpreted as 1 */
@@ -94,10 +94,37 @@ ora_substr(Datum str, int start, int len)
 			str, Int32GetDatum(start), Int32GetDatum(len)));
 }
 
-/* simply search algorhitm - can be better */
+/*
+ * len < 0 means "length is not specified".
+ */
+static bytea *
+orafce_substrb(Datum str, int start, int len)
+{
+	if (start == 0)
+		start = 1;	/* 0 is interpreted as 1 */
+	else if (start < 0)
+	{
+		bytea	   *t = DatumGetByteaPP(str);
+		int			n = VARSIZE_ANY_EXHDR(t);
 
+		start = n + start + 1;
+		if (start <= 0)
+			return DatumGetByteaPP(DirectFunctionCall1(byteain, CStringGetDatum("")));
+
+		str = PointerGetDatum(t);	/* save detoasted text */
+	}
+
+	if (len < 0)
+		return DatumGetByteaP(DirectFunctionCall2(bytea_substr_no_len,
+			str, Int32GetDatum(start)));
+	else
+		return DatumGetByteaP(DirectFunctionCall3(bytea_substr,
+			str, Int32GetDatum(start), Int32GetDatum(len)));
+}
+
+/* simply search algorhitm - can be better */
 static int
-ora_instr_mb(text *txt, text *pattern, int start, int nth)
+orafce_instr_mb(text *txt, text *pattern, int start, int nth)
 {
 	int			c_len_txt, c_len_pat;
 	int			b_len_pat;
@@ -106,7 +133,7 @@ ora_instr_mb(text *txt, text *pattern, int start, int nth)
 	int			beg, end, i, dx;
 
 	str_txt = VARDATA_ANY(txt);
-	c_len_txt = ora_mb_strlen(txt, NULL, &pos_txt);
+	c_len_txt = orafce_mb_strlen(txt, NULL, &pos_txt);
 	str_pat = VARDATA_ANY(pattern);
 	b_len_pat = VARSIZE_ANY_EXHDR(pattern);
 	c_len_pat = pg_mbstrlen_with_len(str_pat, b_len_pat);
@@ -142,9 +169,8 @@ ora_instr_mb(text *txt, text *pattern, int start, int nth)
 	return 0;
 }
 
-
 static int
-ora_instr(text *txt, text *pattern, int start, int nth)
+orafce_instr(text *txt, text *pattern, int start, int nth)
 {
 	int			len_txt, len_pat;
 	const char *str_txt, *str_pat;
@@ -158,7 +184,7 @@ ora_instr(text *txt, text *pattern, int start, int nth)
 
 	/* Forward for multibyte strings */
 	if (pg_database_encoding_max_length() > 1)
-		return ora_instr_mb(txt, pattern, start, nth);
+		return orafce_instr_mb(txt, pattern, start, nth);
 
 	str_txt = VARDATA_ANY(txt);
 	len_txt = VARSIZE_ANY_EXHDR(txt);
@@ -198,13 +224,13 @@ ora_instr(text *txt, text *pattern, int start, int nth)
 
 
 /****************************************************************
- * PLVstr.instr
+ * oracle.instr
  *
  * Syntax:
- *   FUNCTION plvstr.instr (string_in VARCHAR, pattern VARCHAR)
- *   FUNCTION plvstr.instr (string_in VARCHAR, pattern VARCHAR,
+ *   FUNCTION oracle.instr (string_in VARCHAR, pattern VARCHAR)
+ *   FUNCTION oracle.instr (string_in VARCHAR, pattern VARCHAR,
  *            start_in INTEGER)
- *   FUNCTION plvstr.instr (string_in VARCHAR, pattern VARCHAR,
+ *   FUNCTION oracle.instr (string_in VARCHAR, pattern VARCHAR,
  *            start_in INTEGER, nth INTEGER)
  *            RETURN INT;
  *
@@ -214,33 +240,33 @@ ora_instr(text *txt, text *pattern, int start, int nth)
  ****************************************************************/
 
 Datum
-plvstr_instr2 (PG_FUNCTION_ARGS)
+orafce_instr2 (PG_FUNCTION_ARGS)
 {
 	text *arg1 = PG_GETARG_TEXT_PP(0);
 	text *arg2 = PG_GETARG_TEXT_PP(1);
 
-	PG_RETURN_INT32(ora_instr(arg1, arg2, 1, 1));
+	PG_RETURN_INT32(orafce_instr(arg1, arg2, 1, 1));
 }
 
 Datum
-plvstr_instr3 (PG_FUNCTION_ARGS)
+orafce_instr3 (PG_FUNCTION_ARGS)
 {
 	text *arg1 = PG_GETARG_TEXT_PP(0);
 	text *arg2 = PG_GETARG_TEXT_PP(1);
 	int arg3 = PG_GETARG_INT32(2);
 
-	PG_RETURN_INT32(ora_instr(arg1, arg2, arg3, 1));
+	PG_RETURN_INT32(orafce_instr(arg1, arg2, arg3, 1));
 }
 
 Datum
-plvstr_instr4 (PG_FUNCTION_ARGS)
+orafce_instr4 (PG_FUNCTION_ARGS)
 {
 	text *arg1 = PG_GETARG_TEXT_PP(0);
 	text *arg2 = PG_GETARG_TEXT_PP(1);
 	int arg3 = PG_GETARG_INT32(2);
 	int arg4 = PG_GETARG_INT32(3);
 
-	PG_RETURN_INT32(ora_instr(arg1, arg2, arg3, arg4));
+	PG_RETURN_INT32(orafce_instr(arg1, arg2, arg3, arg4));
 }
 
 
@@ -248,7 +274,7 @@ plvstr_instr4 (PG_FUNCTION_ARGS)
  * substr
  *
  * Syntax:
- *   FUNCTION substr (string, start_position, [length])
+ *   FUNCTION oracle.substr (string, start_position, [length])
  *   	RETURN VARCHAR;
  *
  * Purpouse:
@@ -257,7 +283,7 @@ plvstr_instr4 (PG_FUNCTION_ARGS)
  ****************************************************************/
 
 Datum
-oracle_substr3(PG_FUNCTION_ARGS)
+orafce_substr3(PG_FUNCTION_ARGS)
 {
 	int32	len = PG_GETARG_INT32(2);
 
@@ -275,55 +301,40 @@ oracle_substr3(PG_FUNCTION_ARGS)
 			PG_RETURN_NULL();
 	}
 
-	PG_RETURN_TEXT_P(ora_substr(PG_GETARG_DATUM(0), PG_GETARG_INT32(1), len));
+	PG_RETURN_TEXT_P(orafce_substr(PG_GETARG_DATUM(0), PG_GETARG_INT32(1), len));
 }
 
 Datum
-oracle_substr2(PG_FUNCTION_ARGS)
+orafce_substr2(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_TEXT_P(ora_substr(PG_GETARG_DATUM(0), PG_GETARG_INT32(1), -1));
+	PG_RETURN_TEXT_P(orafce_substr(PG_GETARG_DATUM(0), PG_GETARG_INT32(1), -1));
 }
 
-/*
- * len < 0 means "length is not specified".
- */
-static bytea *
-ora_substrb(Datum str, int start, int len)
-{
-	if (start == 0)
-		start = 1;	/* 0 is interpreted as 1 */
-	else if (start < 0)
-	{
-		bytea	   *t = DatumGetByteaPP(str);
-		int			n = VARSIZE_ANY_EXHDR(t);
 
-		start = n + start + 1;
-		if (start <= 0)
-			return DatumGetByteaPP(DirectFunctionCall1(byteain, CStringGetDatum("")));
-
-		str = PointerGetDatum(t);	/* save detoasted text */
-	}
-
-	if (len < 0)
-		return DatumGetByteaP(DirectFunctionCall2(bytea_substr_no_len,
-			str, Int32GetDatum(start)));
-	else
-		return DatumGetByteaP(DirectFunctionCall3(bytea_substr,
-			str, Int32GetDatum(start), Int32GetDatum(len)));
-}
+/****************************************************************
+ * substrb
+ *
+ * Syntax:
+ *   FUNCTION oracle.substrb (string, start_position, [length])
+ *   	RETURN VARCHAR;
+ *
+ * Purpouse:
+ *   Returns len chars from start_in position, compatible with Oracle
+ *
+ ****************************************************************/
 
 Datum
-oracle_substrb2(PG_FUNCTION_ARGS)
+orafce_substrb2(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_BYTEA_P(ora_substrb(PG_GETARG_DATUM(0),
+	PG_RETURN_BYTEA_P(orafce_substrb(PG_GETARG_DATUM(0),
 							   PG_GETARG_INT32(1),
 							   -1));
 }
 
 Datum
-oracle_substrb3(PG_FUNCTION_ARGS)
+orafce_substrb3(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_BYTEA_P(ora_substrb(PG_GETARG_DATUM(0),
+	PG_RETURN_BYTEA_P(orafce_substrb(PG_GETARG_DATUM(0),
 							   PG_GETARG_INT32(1),
 							   PG_GETARG_INT32(2)));
 }

@@ -103,19 +103,19 @@ COMMENT ON FUNCTION oracle.set_nls_sort(text) IS '';
 
 CREATE FUNCTION oracle.instr(str text, patt text, start int, nth int)
 RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr4'
+AS 'MODULE_PATHNAME','orafce_instr4'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.instr(text, text, int, int) IS 'Search pattern in string';
 
 CREATE FUNCTION oracle.instr(str text, patt text, start int)
 RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr3'
+AS 'MODULE_PATHNAME','orafce_instr3'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.instr(text, text, int) IS 'Search pattern in string';
 
 CREATE FUNCTION oracle.instr(str text, patt text)
 RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr2'
+AS 'MODULE_PATHNAME','orafce_instr2'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.instr(text, text) IS 'Search pattern in string';
 
@@ -262,13 +262,13 @@ COMMENT ON FUNCTION oracle.lnnvl(bool) IS '';
 -- can't overwrite PostgreSQL functions!!!!
 CREATE FUNCTION oracle.substr(str text, start int)
 RETURNS text
-AS 'MODULE_PATHNAME','oracle_substr2'
+AS 'MODULE_PATHNAME','orafce_substr2'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substr(text, int) IS 'Returns substring started on start_in to end';
 
 CREATE FUNCTION oracle.substr(str text, start int, len int)
 RETURNS text
-AS 'MODULE_PATHNAME','oracle_substr3'
+AS 'MODULE_PATHNAME','orafce_substr3'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substr(text, int, int) IS 'Returns substring started on start_in len chars';
 
@@ -1718,13 +1718,13 @@ $$;
 -- these are 'byte' versions of corresponsing text/varchar functions
 
 CREATE OR REPLACE FUNCTION oracle.substrb(oracle.varchar2, integer, integer) RETURNS oracle.varchar2
-AS 'MODULE_PATHNAME','oracle_substrb3'
+AS 'MODULE_PATHNAME','orafce_substrb3'
 LANGUAGE C
 STRICT IMMUTABLE PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substrb(oracle.varchar2, integer, integer) IS 'extracts specified number of bytes from the input varchar2 string starting at the specified byte position (1-based) and returns as a varchar2 string';
 
 CREATE OR REPLACE FUNCTION oracle.substrb(oracle.varchar2, integer) RETURNS oracle.varchar2
-AS 'MODULE_PATHNAME','oracle_substrb2'
+AS 'MODULE_PATHNAME','orafce_substrb2'
 LANGUAGE C
 STRICT IMMUTABLE PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substrb(oracle.varchar2, integer) IS 'extracts specified number of bytes from the input varchar2 string starting at the specified byte position (1-based) and returns as a varchar2 string';

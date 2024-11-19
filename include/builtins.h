@@ -164,13 +164,13 @@ extern PGDLLEXPORT Datum dbms_pipe_pack_message_integer(PG_FUNCTION_ARGS);
 extern PGDLLEXPORT Datum dbms_pipe_pack_message_bigint(PG_FUNCTION_ARGS);
 
 /* from string.c */
-extern PGDLLEXPORT Datum plvstr_instr2(PG_FUNCTION_ARGS);
-extern PGDLLEXPORT Datum plvstr_instr3(PG_FUNCTION_ARGS);
-extern PGDLLEXPORT Datum plvstr_instr4(PG_FUNCTION_ARGS);
-extern PGDLLEXPORT Datum oracle_substr2(PG_FUNCTION_ARGS);
-extern PGDLLEXPORT Datum oracle_substr3(PG_FUNCTION_ARGS);
-extern PGDLLEXPORT Datum oracle_substrb2(PG_FUNCTION_ARGS);
-extern PGDLLEXPORT Datum oracle_substrb3(PG_FUNCTION_ARGS);
+extern PGDLLEXPORT Datum orafce_instr2(PG_FUNCTION_ARGS);
+extern PGDLLEXPORT Datum orafce_instr3(PG_FUNCTION_ARGS);
+extern PGDLLEXPORT Datum orafce_instr4(PG_FUNCTION_ARGS);
+extern PGDLLEXPORT Datum orafce_substr2(PG_FUNCTION_ARGS);
+extern PGDLLEXPORT Datum orafce_substr3(PG_FUNCTION_ARGS);
+extern PGDLLEXPORT Datum orafce_substrb2(PG_FUNCTION_ARGS);
+extern PGDLLEXPORT Datum orafce_substrb3(PG_FUNCTION_ARGS);
 
 /* from putline.c */
 extern PGDLLEXPORT Datum dbms_output_enable(PG_FUNCTION_ARGS);
