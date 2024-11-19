@@ -11,21 +11,10 @@
     1.0. first public version 13. March 2006
 */
 
-
 #include "postgres.h"
 #include "utils/builtins.h"
-#include "utils/numeric.h"
-#include "utils/pg_locale.h"
-#include "mb/pg_wchar.h"
-#include "nodes/execnodes.h"
-
-#include "catalog/pg_type.h"
-#include "libpq/pqformat.h"
 #include "orafce.h"
-#include "builtins.h"
-
-#include <string.h>
-#include <stdlib.h>
+#include "mb/pg_wchar.h"
 
 PG_FUNCTION_INFO_V1(plvstr_instr2);
 PG_FUNCTION_INFO_V1(plvstr_instr3);
@@ -39,48 +28,11 @@ PG_FUNCTION_INFO_V1(oracle_substrb3);
 
 int orafce_substring_length_is_zero = ORAFCE_COMPATIBILITY_WARNING_ORACLE;
 
-static text *ora_substr(Datum str, int start, int len);
-
-#define ora_substr_text(str, start, len) \
-	ora_substr(PointerGetDatum((str)), (start), (len))
-
-static const char* char_names[] = {
-	"NULL","SOH","STX","ETX","EOT","ENQ","ACK","DEL",
-	"BS",  "HT", "NL", "VT", "NP", "CR", "SO", "SI",
-	"DLE", "DC1","DC2","DC3","DC4","NAK","SYN","ETB",
-	"CAN", "EM","SUB","ESC","FS","GS","RS","US","SP"
-};
-
-#define NON_EMPTY_CHECK(str) \
-if (VARSIZE_ANY_EXHDR(str) == 0) \
-	ereport(ERROR, \
-			(errcode(ERRCODE_INVALID_PARAMETER_VALUE), \
-			 errmsg("invalid parameter"), \
-		 errdetail("Not allowed empty string.")));
-
-#define PARAMETER_ERROR(detail) \
-	ereport(ERROR, \
-		(errcode(ERRCODE_INVALID_PARAMETER_VALUE), \
-		 errmsg("invalid parameter"), \
-		 errdetail(detail)));
-
-
-#ifndef _pg_mblen
-#define _pg_mblen	pg_mblen
-#endif
-
-typedef enum
-{
-	POSITION,
-	FIRST,
-	LAST
-}  position_mode;
-
 /*
  * Make substring, can handle negative start
  *
  */
-int
+static int
 ora_mb_strlen(text *str, char **sizes, int **positions)
 {
 	int r_len;
@@ -100,7 +52,7 @@ ora_mb_strlen(text *str, char **sizes, int **positions)
 	{
 		int sz;
 
-		sz = _pg_mblen(p);
+		sz = pg_mblen(p);
 		if (sizes)
 			(*sizes)[cur_size] = sz;
 		if (positions)
@@ -111,34 +63,6 @@ ora_mb_strlen(text *str, char **sizes, int **positions)
 	}
 
 	return cur_size;
-}
-
-
-int
-ora_mb_strlen1(text *str)
-{
-	int r_len;
-	int c;
-	char *p;
-
-	r_len = VARSIZE_ANY_EXHDR(str);
-
-	if (pg_database_encoding_max_length() == 1)
-		return r_len;
-
-	p = VARDATA_ANY(str);
-	c = 0;
-	while (r_len > 0)
-	{
-		int sz;
-
-		sz = _pg_mblen(p);
-		p += sz;
-		r_len -= sz;
-		c += 1;
-	}
-
-	return c;
 }
 
 /*
@@ -219,7 +143,7 @@ ora_instr_mb(text *txt, text *pattern, int start, int nth)
 }
 
 
-int
+static int
 ora_instr(text *txt, text *pattern, int start, int nth)
 {
 	int			len_txt, len_pat;
@@ -227,7 +151,10 @@ ora_instr(text *txt, text *pattern, int start, int nth)
 	int			beg, end, i, dx;
 
 	if (nth <= 0)
-		PARAMETER_ERROR("Four parameter isn't positive.");
+		ereport(ERROR,
+		(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+		 errmsg("invalid parameter"),
+		 errdetail("Four parameter isn't positive.")));
 
 	/* Forward for multibyte strings */
 	if (pg_database_encoding_max_length() > 1)
@@ -356,48 +283,6 @@ oracle_substr2(PG_FUNCTION_ARGS)
 {
 	PG_RETURN_TEXT_P(ora_substr(PG_GETARG_DATUM(0), PG_GETARG_INT32(1), -1));
 }
-
-
-static text*
-ora_concat2(text *str1, text *str2)
-{
-	int l1;
-	int l2;
-	text *result;
-
-	l1 = VARSIZE_ANY_EXHDR(str1);
-	l2 = VARSIZE_ANY_EXHDR(str2);
-
-	result = palloc(l1+l2+VARHDRSZ);
-	memcpy(VARDATA(result), VARDATA_ANY(str1), l1);
-	memcpy(VARDATA(result) + l1, VARDATA_ANY(str2), l2);
-	SET_VARSIZE(result, l1 + l2 + VARHDRSZ);
-
-	return result;
-}
-
-
-static text*
-ora_concat3(text *str1, text *str2, text *str3)
-{
-	int l1;
-	int l2;
-	int l3;
-	text *result;
-
-	l1 = VARSIZE_ANY_EXHDR(str1);
-	l2 = VARSIZE_ANY_EXHDR(str2);
-	l3 = VARSIZE_ANY_EXHDR(str3);
-
-	result = palloc(l1+l2+l3+VARHDRSZ);
-	memcpy(VARDATA(result), VARDATA_ANY(str1), l1);
-	memcpy(VARDATA(result) + l1, VARDATA_ANY(str2), l2);
-	memcpy(VARDATA(result) + l1+l2, VARDATA_ANY(str3), l3);
-	SET_VARSIZE(result, l1 + l2 + l3 + VARHDRSZ);
-
-	return result;
-}
-
 
 /*
  * len < 0 means "length is not specified".
