@@ -9,7 +9,7 @@ SET(TMAX_ORAFCE_SOURCES_FN
     ${SOURCE_PATH}/others.c
     ${SOURCE_PATH}/regexp.c
     ${SOURCE_PATH}/replace_empty_string.c
-    ${SOURCE_PATH}/plvstr.c
+    ${SOURCE_PATH}/string.c
 
     PARENT_SCOPE
 )

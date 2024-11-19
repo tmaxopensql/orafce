@@ -163,7 +163,7 @@ extern PGDLLEXPORT Datum dbms_pipe_unpack_message_record(PG_FUNCTION_ARGS);
 extern PGDLLEXPORT Datum dbms_pipe_pack_message_integer(PG_FUNCTION_ARGS);
 extern PGDLLEXPORT Datum dbms_pipe_pack_message_bigint(PG_FUNCTION_ARGS);
 
-/* from plvstr.c */
+/* from string.c */
 extern PGDLLEXPORT Datum plvstr_instr2(PG_FUNCTION_ARGS);
 extern PGDLLEXPORT Datum plvstr_instr3(PG_FUNCTION_ARGS);
 extern PGDLLEXPORT Datum plvstr_instr4(PG_FUNCTION_ARGS);
