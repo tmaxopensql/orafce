@@ -6,161 +6,221 @@ BEGIN;
     CREATE EXTENSION IF NOT EXISTS orafce;
 
     -- Plan the number of tests to execute
-    SELECT PLAN(1);
+    SELECT PLAN(17);
 
     -- Set search_path to oracle to prevent using "oracle.*" prefixes on everything
     SET search_path to public, oracle;
 
     -- Write tests
-    SELECT pass('My test passed!');
-    SET client_min_messages = NOTICE;
-    \set VERBOSITY terse
-    \set ECHO all
-    CREATE OR REPLACE FUNCTION gen_file(dir text) RETURNS void AS $$
-    DECLARE
-    f utl_file.file_type;
-    BEGIN
-    f := utl_file.fopen(dir, 'regress_orafce.txt', 'w');
-    PERFORM utl_file.put_line(f, 'ABC');
-    PERFORM utl_file.put_line(f, '123'::numeric);
-    PERFORM utl_file.put_line(f, '-----');
-    PERFORM utl_file.new_line(f);
-    PERFORM utl_file.put_line(f, '-----');
-    PERFORM utl_file.new_line(f, 0);
-    PERFORM utl_file.put_line(f, '-----');
-    PERFORM utl_file.new_line(f, 2);
-    PERFORM utl_file.put_line(f, '-----');
-    PERFORM utl_file.put(f, 'A');
-    PERFORM utl_file.put(f, 'B');
-    PERFORM utl_file.new_line(f);
-    PERFORM utl_file.putf(f, '[1=%s, 2=%s, 3=%s, 4=%s, 5=%s]', '1', '2', '3', '4', '5');
-    PERFORM utl_file.new_line(f);
-    PERFORM utl_file.put_line(f, '1234567890');
-    f := utl_file.fclose(f);
-    END;
-    $$ LANGUAGE plpgsql;
+    SELECT has_relation('utl_file', 'utl_file_dir', 'Test utl_file_dir is created');
+    SELECT has_type('utl_file', 'file_type', 'Test file_type is created');
 
-    /* Test functions utl_file.fflush(utl_file.file_type) and 
-    * utl_file.get_nextline(utl_file.file_type)
-    * This function tests the positive test case of fflush by reading from the 
-    * file after flushing the contents to the file. 
-    */
-    CREATE OR REPLACE FUNCTION checkFlushFile(dir text) RETURNS void AS $$
-    DECLARE
-    f utl_file.file_type;
-    f1 utl_file.file_type;
-    ret_val text;
-    i integer;
-    BEGIN
-    f := utl_file.fopen(dir, 'regressflush_orafce.txt', 'a');
-    PERFORM utl_file.put_line(f, 'ABC');
-    PERFORM utl_file.new_line(f);
-    PERFORM utl_file.put_line(f, '123'::numeric);
-    PERFORM utl_file.new_line(f);
-    PERFORM utl_file.putf(f, '[1=%s, 2=%s, 3=%s, 4=%s, 5=%s]', '1', '2', '3', '4', '5');
-    PERFORM utl_file.fflush(f);
-    f1 := utl_file.fopen(dir, 'regressflush_orafce.txt', 'r');
-    ret_val=utl_file.get_nextline(f1);
-    i:=1;
-    WHILE ret_val IS NOT NULL LOOP
-        RAISE NOTICE '[%] >>%<<', i,ret_val;
-        ret_val := utl_file.get_nextline(f1);
-        i:=i+1;
-    END LOOP;
-    RAISE NOTICE '>>%<<', ret_val;
-    f1 := utl_file.fclose(f1);
-    f := utl_file.fclose(f);
-    END;
-    $$ LANGUAGE plpgsql;
+    SELECT throws_ok(
+        $$SELECT utl_file.fopen(utl_file.tmpdir(), 'sample.txt', 'r');$$,
+        'UTL_FILE_INVALID_PATH',
+        'Error when accessing a file in an unregistered path'
+    );
 
-    CREATE OR REPLACE FUNCTION read_file(dir text) RETURNS void AS $$
-    DECLARE
-    f utl_file.file_type;
-    BEGIN
-    f := utl_file.fopen(dir, 'regress_orafce.txt', 'r');
-    FOR i IN 1..11 LOOP
-        RAISE NOTICE '[%] >>%<<', i, utl_file.get_line(f);
-    END LOOP;
-    RAISE NOTICE '>>%<<', utl_file.get_line(f, 4);
-    RAISE NOTICE '>>%<<', utl_file.get_line(f, 4);
-    RAISE NOTICE '>>%<<', utl_file.get_line(f);
-    RAISE NOTICE '>>%<<', utl_file.get_line(f);
-    EXCEPTION
-        -- WHEN no_data_found THEN,  8.1 plpgsql doesn't know no_data_found
-        WHEN others THEN
-        RAISE NOTICE 'finish % ', sqlerrm;
-        RAISE NOTICE 'is_open = %', utl_file.is_open(f);
-        PERFORM utl_file.fclose_all();
-        RAISE NOTICE 'is_open = %', utl_file.is_open(f);
-    END;
-    $$ LANGUAGE plpgsql;
-
-    SELECT EXISTS(SELECT * FROM pg_catalog.pg_class where relname='utl_file_dir') AS exists;
-
-    SELECT EXISTS(SELECT * FROM pg_catalog.pg_type where typname='file_type') AS exists;
-
-    -- Trying to access a file in path not registered
-    SELECT utl_file.fopen(utl_file.tmpdir(),'sample.txt','r');
-
-    -- Trying to access file in a non-existent directory
     INSERT INTO utl_file.utl_file_dir(dir) VALUES('test_tmp_dir');
-    SELECT utl_file.fopen('test_tmp_dir','file.txt.','w');
-    DELETE FROM utl_file.utl_file_dir WHERE dir LIKE 'test_tmp_dir';
-    -- Add tmpdir() to utl_file_dir table
-    INSERT INTO utl_file.utl_file_dir(dir) VALUES(utl_file.tmpdir());
+    SELECT throws_ok(
+        $$SELECT utl_file.fopen('test_tmp_dir', 'file.txt.','w');$$,
+        'UTL_FILE_INVALID_PATH',
+        'Error when accessing a file in a directory that does not exist'
+    );
 
-    SELECT count(*) from utl_file.utl_file_dir where dir <> '';
+    DELETE FROM utl_file.utl_file_dir WHERE dir like 'test_tmp_dir';
+    SELECT lives_ok(
+        $$INSERT INTO utl_file.utl_file_dir(dir, dirname) VALUES (utl_file.tmpdir(), 'TMPDIR');$$,
+        'Test utl_file.tmpdir()'
+    );
 
-    -- Trying to access non-existent file
-    SELECT utl_file.fopen(utl_file.tmpdir(),'non_existent_file.txt','r');
+    SELECT throws_ok(
+        $$SELECT utl_file.fopen(utl_file.tmpdir(), 'invalid_file_name.txt', 'r');$$,
+        'UTL_FILE_INVALID_PATH',
+        'Error when accessing a file that does not exist'
+    );
 
-    --Other test cases
-    --run this under unprivileged user
-    CREATE ROLE test_role_files LOGIN;
-    SET ROLE TO test_role_files;
+    DO
+    $$
+    DECLARE
+        ftest utl_file.file_type;
+        pgtap_ok text; -- dummy return for pgtap to work inside anon block
+    BEGIN
+        ftest := utl_file.fopen('TMPDIR', 'test.txt', 'w');
 
-    -- should to fail, unpriviliged user cannot to change utl_file_dir
-    INSERT INTO utl_file.utl_file_dir(dir) VALUES('test_tmp_dir');
+        -- Put a line into a txt file
+        PERFORM utl_file.put_line(ftest, '1234567890');
 
-    SELECT gen_file(utl_file.tmpdir());
-    SELECT fexists FROM utl_file.fgetattr(utl_file.tmpdir(), 'regress_orafce.txt');
-    SELECT utl_file.fcopy(utl_file.tmpdir(), 'regress_orafce.txt', utl_file.tmpdir(), 'regress_orafce2.txt');
-    SELECT fexists FROM utl_file.fgetattr(utl_file.tmpdir(), 'regress_orafce2.txt');
-    SELECT utl_file.frename(utl_file.tmpdir(), 'regress_orafce2.txt', utl_file.tmpdir(), 'regress_orafce.txt', true);
-    SELECT fexists FROM utl_file.fgetattr(utl_file.tmpdir(), 'regress_orafce.txt');
-    SELECT fexists FROM utl_file.fgetattr(utl_file.tmpdir(), 'regress_orafce2.txt');
-    SELECT read_file(utl_file.tmpdir());
-    SELECT utl_file.fremove(utl_file.tmpdir(), 'regress_orafce.txt');
-    SELECT fexists FROM utl_file.fgetattr(utl_file.tmpdir(), 'regress_orafce.txt');
-    SELECT checkFlushFile(utl_file.tmpdir());
-    SELECT utl_file.fremove(utl_file.tmpdir(), 'regressflush_orafce.txt');
+        -- Put numeric into a txt file
+        PERFORM utl_file.put_line(ftest, 1234567890::numeric);
+        
+        -- Put a new line into a txt file
+        PERFORM utl_file.new_line(ftest);
 
-    SET ROLE TO DEFAULT;
+        -- Place a marker to check the number of new lines
+        PERFORM utl_file.put_line(ftest, '@@ NEW LINE MARKER @@');
 
-    DROP FUNCTION checkFlushFile(text);
-    DELETE FROM utl_file.utl_file_dir;
+        -- Passing 0 to utl_file.new_line should place no new line
+        PERFORM utl_file.new_line(ftest, 0);
+        
+        PERFORM utl_file.put_line(ftest, '@@ NEW LINE MARKER @@');
 
-    -- try to use named directory
-    INSERT INTO utl_file.utl_file_dir(dir, dirname) VALUES(utl_file.tmpdir(), 'TMPDIR');
-    SELECT gen_file('TMPDIR');
-    SELECT read_file('TMPDIR');
-    SELECT utl_file.fremove('TMPDIR', 'regress_orafce.txt');
+        -- Passing 2 to utl_file.new_line should place two new lines
+        PERFORM utl_file.new_line(ftest, 2);
+        
+        -- Put a string into a txt file without a new line
+        PERFORM utl_file.put(ftest, 'ABC ');
+        PERFORM utl_file.put(ftest, '@@ END OF LINE @@');
+        PERFORM utl_file.new_line(ftest);
 
-    DROP FUNCTION gen_file(text);
-    DROP FUNCTION read_file(text);
+        -- Test formatted put
+        PERFORM utl_file.putf(ftest, '[1=%s, 2=%s, 3=%s, 4=%s, 5=%s]', '1', '2', '3', '4', '5');
+        PERFORM utl_file.new_line(ftest);
 
-    DELETE FROM utl_file.utl_file_dir;
+        PERFORM utl_file.fclose(ftest);
+    END;
+    $$;
 
-    -- reconnect
-    \c
+    -- Test validity of the generated file
+    SELECT results_eq(
+        $$SELECT * FROM utl_file.fgetattr('TMPDIR', 'test.txt');$$,
+        $$VALUES (true,117::bigint,4096::integer)$$,
+        'File is successfully generated'
+    );
 
-    SET ROLE TO test_role_files;
+    -- Test fcopy, frename, fremove
+    SELECT lives_ok(
+        $$SELECT utl_file.fcopy('TMPDIR', 'test.txt', 'TMPDIR', 'test2.txt');$$,
+        'Test fcopy'
+    );
 
-    -- use any function from orafce, should not to fail
-    SELECT oracle.add_months('2024-05-20', 1);
+    SELECT results_eq(
+        $$SELECT * FROM utl_file.fgetattr('TMPDIR', 'test.txt');$$,
+        $$SELECT * FROM utl_file.fgetattr('TMPDIR', 'test2.txt');$$,
+        'Copied file has the same attributes as the original'
+    );
 
-    SET ROLE TO DEFAULT;
-    DROP ROLE test_role_files;
+    SELECT lives_ok(
+        $$SELECT utl_file.frename('TMPDIR', 'test2.txt', 'TMPDIR', 'test3.txt', true);$$,
+        'Test frename'
+    );
+
+    SELECT results_eq(
+        $$SELECT utl_file.fgetattr('TMPDIR', 'test.txt');$$,
+        $$SELECT utl_file.fgetattr('TMPDIR', 'test3.txt');$$,
+        'Renamed file has the same attributes as the original'
+    );
+
+    SELECT lives_ok(
+        $$SELECT utl_file.fremove('TMPDIR', 'test3.txt');$$,
+        'Test fremove'
+    );
+
+    SELECT results_eq(
+        $$SELECT * FROM utl_file.fgetattr('TMPDIR', 'test3.txt');$$,
+        $$VALUES (false,NULL::bigint,NULL::integer)$$,
+        'File is successfully removed'
+    );
+
+    -- Test contents of the file
+    CREATE OR REPLACE FUNCTION read_file(dir text, fname text, maxlength int default 0)
+    RETURNS text
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        f utl_file.file_type;
+        stack text := '';
+        line text;
+    BEGIN
+        f := utl_file.fopen(dir, fname, 'r');
+        WHILE utl_file.is_open(f)
+        LOOP
+            IF maxlength > 0 THEN 
+                SELECT utl_file.get_line(f, maxlength) INTO line;
+            ELSE
+                SELECT utl_file.get_line(f) INTO line;
+            END IF;
+            
+            stack := stack || line || E'\n';
+        END LOOP;
+
+        EXCEPTION WHEN others THEN
+            PERFORM utl_file.fclose_all();
+        
+        RETURN stack;
+    END;
+    $$;
+
+    SELECT is(
+        read_file('TMPDIR', 'test.txt'),
+        E'1234567890\n'
+         '1234567890\n'
+         '\n'
+         '@@ NEW LINE MARKER @@\n'
+         '@@ NEW LINE MARKER @@\n'
+         '\n'
+         '\n'
+         'ABC @@ END OF LINE @@\n'
+         '[1=1, 2=2, 3=3, 4=4, 5=5]\n',
+         'The content of the test file matches the expected'
+    );
+
+    -- Test fflush
+    CREATE OR REPLACE FUNCTION flush_file_test()
+    RETURNS text
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        writefile utl_file.file_type;
+        stack text;
+    BEGIN
+        writefile := utl_file.fopen('TMPDIR', 'test.txt', 'w');
+        PERFORM utl_file.put_line(writefile, 'ABCDEFG');
+        PERFORM utl_file.fflush(writefile);
+
+        stack := read_file('TMPDIR', 'test.txt');
+        RETURN stack;
+    END;
+    $$;
+
+    SELECT is(
+        flush_file_test(),
+        E'ABCDEFG\n',
+        'Test the contents were written to the file after flush'
+    );
+
+    -- Test write in append mode
+    DO
+    $$
+    DECLARE
+        appendfile utl_file.file_type;
+    BEGIN
+        appendfile := utl_file.fopen('TMPDIR', 'test.txt', 'a');
+        PERFORM utl_file.put_line(appendfile, 'HIJKLMN');
+        PERFORM utl_file.fclose(appendfile);
+    END;
+    $$;
+    
+    SELECT is(
+        read_file('TMPDIR', 'test.txt'),
+        E'ABCDEFG\n'
+         'HIJKLMN\n',
+        'Test the contents were appended to the test file'
+    );
+
+    -- Test utl_file.get_line with maxlength
+    SELECT is(
+        read_file('TMPDIR', 'test.txt', 4),
+        E'ABCD\n'
+         'EFG\n'
+         'HIJK\n'
+         'LMN\n',
+        'Test the files are read according to the maxlength'
+    );
+
+    SELECT utl_file.fremove('TMPDIR', 'test.txt');
 
     -- Clean up and finish the test
     SELECT * FROM finish();

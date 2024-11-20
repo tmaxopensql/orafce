@@ -12,8 +12,8 @@ BEGIN;
     SET search_path to public, oracle;
 
     -- Write tests
-    SELECT has_view('dual');
-    SELECT results_eq('SELECT * FROM DUAL;', $$VALUES ('X'::VARCHAR)$$);
+    SELECT has_view('dual', 'View dual should exist');
+    SELECT results_eq('SELECT * FROM DUAL;', $$VALUES ('X'::VARCHAR)$$, 'Test selecting dual');
 
     -- Clean up and finish the test
     SELECT * FROM finish();

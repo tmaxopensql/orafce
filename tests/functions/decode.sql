@@ -86,11 +86,15 @@ BEGIN;
     SELECT is(decode(NULL, '2020-01-01 01:00:01-08'::timestamptz, '2012-12-20 09:00:00-08'::timestamptz, '2020-01-02 01:00:01-08'::timestamptz, '2012-12-20 12:00:00-08'::timestamptz), NULL);
     SELECT is(decode(NULL, '2020-01-01 01:00:01-08'::timestamptz, '2012-12-20 09:00:00-08'::timestamptz, '2020-01-02 01:00:01-08'::timestamptz, '2012-12-20 12:00:00-08'::timestamptz, '2012-12-20 00:00:00-08'::timestamptz), '2012-12-20 00:00:00-08'::timestamptz);
 
-    CREATE OR REPLACE FUNCTION five() RETURNS integer AS $$
+    CREATE OR REPLACE FUNCTION five()
+    RETURNS integer
+    LANGUAGE plpgsql
+    AS 
+    $$
     BEGIN
         RETURN 5;
     END; 
-    $$ LANGUAGE plpgsql;
+    $$;
 
     SELECT is(
         decode(five(), 1, 'one', 2, 'two', 5, 'five'),

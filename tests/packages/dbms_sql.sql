@@ -6,325 +6,318 @@ BEGIN;
     CREATE EXTENSION IF NOT EXISTS orafce;
 
     -- Plan the number of tests to execute
-    SELECT PLAN(1);
+    SELECT PLAN(12);
 
     -- Set search_path to oracle to prevent using "oracle.*" prefixes on everything
     SET search_path to public, oracle;
 
     -- Write tests
-    do $$
-    declare
-    c int;
-    strval varchar;
-    intval int;
-    nrows int default 30;
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'select ''ahoj'' || i, i from generate_series(1, :nrows) g(i)');
-    call dbms_sql.bind_variable(c, 'nrows', nrows);
-    call dbms_sql.define_column(c, 1, strval);
-    call dbms_sql.define_column(c, 2, intval);
-    perform dbms_sql.execute(c);
-    while dbms_sql.fetch_rows(c) > 0
-    loop
-        call dbms_sql.column_value(c, 1, strval);
-        call dbms_sql.column_value(c, 2, intval);
-        raise notice 'c1: %, c2: %', strval, intval;
-    end loop;
-    call dbms_sql.close_cursor(c);
-    end;
+    CREATE OR REPLACE FUNCTION test_simple_query()
+    RETURNS text
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+        strval varchar;
+        intval int;
+        stack text := '';
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'select ''ahoj'' || i, i from generate_series(1, 5) g(i)');
+        CALL dbms_sql.define_column(c, 1, strval);
+        CALL dbms_sql.define_column(c, 2, intval);
+        PERFORM dbms_sql.execute(c);
+        
+        WHILE dbms_sql.fetch_rows(c) > 0
+        LOOP
+            CALL dbms_sql.column_value(c, 1, strval);
+            CALL dbms_sql.column_value(c, 2, intval);
+            stack := stack || strval || ',' || intval || E'\n';
+        END LOOP;
+
+        CALL dbms_sql.close_cursor(c);
+        RETURN stack;
+    END;
     $$;
 
-    do $$
-    declare
-    c int;
-    strval varchar;
-    intval int;
-    nrows int default 30;
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'select ''ahoj'' || i, i from generate_series(1, :nrows) g(i)');
-    call dbms_sql.bind_variable(c, 'nrows', nrows);
-    call dbms_sql.define_column(c, 1, strval);
-    call dbms_sql.define_column(c, 2, intval);
-    perform dbms_sql.execute(c);
-    while dbms_sql.fetch_rows(c) > 0
-    loop
-        strval := dbms_sql.column_value_f(c, 1, strval);
-        intval := dbms_sql.column_value_f(c, 2, intval);
-        raise notice 'c1: %, c2: %', strval, intval;
-    end loop;
-    call dbms_sql.close_cursor(c);
-    end;
+    SELECT is(
+        test_simple_query(),
+        E'ahoj1,1\n'
+         'ahoj2,2\n'
+         'ahoj3,3\n'
+         'ahoj4,4\n'
+         'ahoj5,5\n',
+        'Test simple query scenario'
+    );
+
+    CREATE OR REPLACE FUNCTION test_simple_query_f()
+    RETURNS text
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+        strval varchar;
+        intval int;
+        stack text := '';
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'select ''ahoj'' || i, i from generate_series(1, 5) g(i)');
+        CALL dbms_sql.define_column(c, 1, strval);
+        CALL dbms_sql.define_column(c, 2, intval);
+        PERFORM dbms_sql.execute(c);
+        
+        WHILE dbms_sql.fetch_rows(c) > 0
+        LOOP
+            strval := dbms_sql.column_value_f(c, 1, strval);
+            intval := dbms_sql.column_value_f(c, 2, intval);
+            stack := stack || strval || ',' || intval || E'\n';
+        END LOOP;
+
+        CALL dbms_sql.close_cursor(c);
+        RETURN stack;
+    END;
     $$;
 
-    drop table if exists foo;
+    SELECT is(
+        test_simple_query_f(),
+        E'ahoj1,1\n'
+         'ahoj2,2\n'
+         'ahoj3,3\n'
+         'ahoj4,4\n'
+         'ahoj5,5\n',
+        'Test simple query scenario with column_value_f'
+    );
 
-    create table foo(a int, b varchar, c numeric);
+    CREATE TABLE IF NOT EXISTS FOO(a varchar, b int);
 
-    do $$
-    declare c int;
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'insert into foo values(:a, :b, :c)');
-    for i in 1..100
-    loop
-        call dbms_sql.bind_variable(c, 'a', i);
-        call dbms_sql.bind_variable(c, 'b', 'Ahoj ' || i);
-        call dbms_sql.bind_variable(c, 'c', i + 0.033);
-        perform dbms_sql.execute(c);
-    end loop;
-    end;
+    CREATE OR REPLACE FUNCTION test_simple_insert()
+    RETURNS void
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'insert into foo values(:a, :b)');
+        FOR i in 1..5
+        LOOP
+            CALL dbms_sql.bind_variable(c, 'a', 'ahoj' || i);
+            CALL dbms_sql.bind_variable(c, 'b', i);
+            PERFORM dbms_sql.execute(c);
+        END LOOP;
+
+        CALL dbms_sql.close_cursor(c);
+    END;
     $$;
 
-    select * from foo;
-    truncate foo;
+    SELECT test_simple_insert();
+    SELECT results_eq(
+        $$SELECT * FROM foo;$$,
+        $$VALUES ('ahoj1'::varchar, 1),
+                 ('ahoj2'::varchar, 2),
+                 ('ahoj3'::varchar, 3),
+                 ('ahoj4'::varchar, 4),
+                 ('ahoj5'::varchar, 5)$$,
+        'Test simple insert scenario'
+    );
+    
+    TRUNCATE foo;
 
-    do $$
-    declare c int;
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'insert into foo values(:a, :b, :c)');
-    for i in 1..100
-    loop
-        perform dbms_sql.bind_variable_f(c, 'a', i);
-        perform dbms_sql.bind_variable_f(c, 'b', 'Ahoj ' || i);
-        perform dbms_sql.bind_variable_f(c, 'c', i + 0.033);
-        perform dbms_sql.execute(c);
-    end loop;
-    end;
+    CREATE OR REPLACE FUNCTION test_simple_insert_f()
+    RETURNS void
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'insert into foo values(:a, :b)');
+        FOR i in 1..5
+        LOOP
+            PERFORM dbms_sql.bind_variable_f(c, 'a', 'ahoj' || i);
+            PERFORM dbms_sql.bind_variable_f(c, 'b', i);
+            PERFORM dbms_sql.execute(c);
+        END LOOP;
+
+        CALL dbms_sql.close_cursor(c);
+    END;
     $$;
 
-    select * from foo;
-    truncate foo;
+    SELECT test_simple_insert_f();
+    SELECT results_eq(
+        $$SELECT * FROM foo;$$,
+        $$VALUES ('ahoj1'::varchar, 1),
+                 ('ahoj2'::varchar, 2),
+                 ('ahoj3'::varchar, 3),
+                 ('ahoj4'::varchar, 4),
+                 ('ahoj5'::varchar, 5)$$,
+        'Test simple insert scenario with bind_variable_f'
+    );
+    TRUNCATE foo;
 
-    do $$
-    declare
-    c int;
-    a int[];
-    b varchar[];
-    ca numeric[];
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'insert into foo values(:a, :b, :c)');
-    a := ARRAY[1, 2, 3, 4, 5];
-    b := ARRAY['Ahoj', 'Nazdar', 'Bazar'];
-    ca := ARRAY[3.14, 2.22, 3.8, 4];
+    CREATE OR REPLACE FUNCTION test_insert_with_array()
+    RETURNS int
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+        a varchar[];
+        b int[];
+        result int;
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'insert into foo values(:a, :b)');
+        
+        a := ARRAY['ahoj1', 'ahoj2', 'ahoj3', 'ahoj4', 'ahoj5'];
+        b := ARRAY[1, 2, 3, 4, 5];
+        
+        CALL dbms_sql.bind_array(c, 'a', a, 2, 3);
+        CALL dbms_sql.bind_array(c, 'b', b, 3, 4);
+        
+        result := dbms_sql.execute(c);
 
-    call dbms_sql.bind_array(c, 'a', a);
-    call dbms_sql.bind_array(c, 'b', b);
-    call dbms_sql.bind_array(c, 'c', ca);
-    raise notice 'inserted rows %d', dbms_sql.execute(c);
-    end;
+        CALL dbms_sql.close_cursor(c);
+        
+        return result;
+    END;
     $$;
 
-    select * from foo;
-    truncate foo;
+    SELECT is(
+        test_insert_with_array(),
+        1,
+        'Test number of affected rows after bulk insert'
+    );
 
-    -- should not to crash, when bound array is null
-    do $$
-    declare
-    c int;
-    ca numeric[];
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'insert into foo values(:a, 10, 20)');
+    SELECT results_eq(
+        $$SELECT * FROM foo;$$,
+        $$VALUES ('ahoj3'::varchar, 3)$$,
+        'Test the contents of the table after bulk insert'
+    );
+    TRUNCATE foo;
 
-    call dbms_sql.bind_array(c, 'a', ca);
-    raise notice 'inserted rows %d', dbms_sql.execute(c);
-    end;
+    CREATE OR REPLACE FUNCTION test_insert_with_empty_array()
+    RETURNS int
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+        a varchar[];
+        result int;
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'insert into foo values(:a, 10)');
+       
+        CALL dbms_sql.bind_array(c, 'a', a);
+        result := dbms_sql.execute(c);
+        CALL dbms_sql.close_cursor(c);
+        
+        return result;
+    END;
     $$;
 
-    -- should not to crash, when we try to touch result without execute
-    do $$
-    declare
-    c int;
-    a int[];
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'select i from generate_series(1, 2) g(i)');
-    call dbms_sql.define_array(c, 1, a, 10, 1);
-    call dbms_sql.column_value(c, 1, a);
-    call dbms_sql.close_cursor(c);
-    end;
+    SELECT is(
+        test_insert_with_empty_array(),
+        0,
+        'Test number of affected rows after bulk insert with empty array'
+    );
+
+    SELECT is_empty(
+        $$SELECT * FROM foo;$$,
+        'Test the contents of the table after bulk insert with empty array'
+    );
+
+    CREATE OR REPLACE FUNCTION test_query_without_execute()
+    RETURNS void 
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+        a varchar[];
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'select i from generate_series(1, 2) g(i)');
+       
+        CALL dbms_sql.define_array(c, 1, a, 10, 1);
+        CALL dbms_sql.column_value(c, 1, a);
+        CALL dbms_sql.close_cursor(c);
+    END;
     $$;
 
-    -- should not to crash, when the variable is overwritten
-    DO $$
-    declare
-    c integer;
-    n integer;
-    c2 numeric;
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'INSERT INTO foo(a) VALUES (:bnd2)');
-    call dbms_sql.bind_variable(c, 'bnd2', c2);
-    call dbms_sql.bind_variable(c, 'bnd2', c2);
-    n := dbms_sql.execute(c);
-    end
+    SELECT throws_ok(
+        $$SELECT test_query_without_execute();$$,
+        'cursor is not executed',
+        'Test when accessing the query result without executing'
+    );
+
+    CREATE OR REPLACE FUNCTION test_insert_with_overwritten_variable()
+    RETURNS void 
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+        a int;
+        result int;
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'insert into foo(b) values (:a)');
+        CALL dbms_sql.bind_variable(c, 'a', a);
+        CALL dbms_sql.bind_variable(c, 'a', a);
+        PERFORM dbms_sql.execute(c);
+        CALL dbms_sql.close_cursor(c);
+    END;
     $$;
 
-    -- should not to crash, when we try to read column without data
-    do $$
-    declare
-    c int;
-    strval varchar;
-    intval int;
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'select ''foo'', 1');
-    call dbms_sql.define_column(c, 1, strval);
-    call dbms_sql.define_column(c, 2, intval);
-    perform dbms_sql.execute(c);
-    while dbms_sql.fetch_rows(c) > -1
-    loop
-        call dbms_sql.column_value(c, 1, strval);
-    end loop;
-    call dbms_sql.close_cursor(c);
-    end;
+    SELECT lives_ok(
+        $$SELECT test_insert_with_overwritten_variable();$$,
+        'Test when variable is overwritten'
+    );
+
+    SELECT results_eq(
+        $$SELECT * FROM foo;$$,
+        $$VALUES (NULL::varchar, NULL::integer)$$,
+        'NULL data is inserted if bind variable is NULL'
+    );
+
+    TRUNCATE foo;
+
+    CREATE OR REPLACE FUNCTION test_query_with_no_data()
+    RETURNS void 
+    LANGUAGE plpgsql
+    AS
+    $$
+    DECLARE
+        c int;
+        strval varchar;
+        intval int;
+    BEGIN
+        c := dbms_sql.open_cursor();
+        CALL dbms_sql.parse(c, 'select ''foo'', 1');
+        CALL dbms_sql.define_column(c, 1, strval);
+        CALL dbms_sql.define_column(c, 2, intval);
+        PERFORM dbms_sql.execute(c);
+
+        WHILE dbms_sql.fetch_rows(c) > -1
+        LOOP
+            CALL dbms_sql.column_value(c, 1, strval);
+        END LOOP;
+        
+        CALL dbms_sql.close_cursor(c);
+    END;
     $$;
 
-    select * from foo;
-    truncate foo;
-    do $$
-    declare
-    c int;
-    a int[];
-    b varchar[];
-    ca numeric[];
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'insert into foo values(:a, :b, :c)');
-    a := ARRAY[1, 2, 3, 4, 5];
-    b := ARRAY['Ahoj', 'Nazdar', 'Bazar'];
-    ca := ARRAY[3.14, 2.22, 3.8, 4];
-
-    call dbms_sql.bind_array(c, 'a', a, 2, 3);
-    call dbms_sql.bind_array(c, 'b', b, 3, 4);
-    call dbms_sql.bind_array(c, 'c', ca);
-    raise notice 'inserted rows %d', dbms_sql.execute(c);
-    end;
-    $$;
-
-    select * from foo;
-    truncate foo;
-
-    do $$
-    declare
-    c int;
-    a int[];
-    b varchar[];
-    ca numeric[];
-    begin
-    c := dbms_sql.open_cursor();
-    call dbms_sql.parse(c, 'select i, ''Ahoj'' || i, i + 0.003 from generate_series(1, 35) g(i)');
-    call dbms_sql.define_array(c, 1, a, 10, 1);
-    call dbms_sql.define_array(c, 2, b, 10, 1);
-    call dbms_sql.define_array(c, 3, ca, 10, 1);
-
-    perform dbms_sql.execute(c);
-    while dbms_sql.fetch_rows(c) > 0
-    loop
-        call dbms_sql.column_value(c, 1, a);
-        call dbms_sql.column_value(c, 2, b);
-        call dbms_sql.column_value(c, 3, ca);
-        raise notice 'a = %', a;
-        raise notice 'b = %', b;
-        raise notice 'c = %', ca;
-    end loop;
-    call dbms_sql.close_cursor(c);
-    end;
-    $$;
-
-    drop table foo;
-
-    create table tab1(c1 integer,  c2 numeric);
-
-    create or replace procedure single_Row_insert(c1 integer, c2 numeric)
-    as $$
-    declare
-    c integer;
-    n integer;
-    begin
-    c := dbms_sql.open_cursor();
-
-    call dbms_sql.parse(c, 'INSERT INTO tab1 VALUES (:bnd1, :bnd2)');
-
-    call dbms_sql.bind_variable(c, 'bnd1', c1);
-    call dbms_sql.bind_variable(c, 'bnd2', c2);
-
-    n := dbms_sql.execute(c);
-
-    call dbms_sql.debug_cursor(c);
-    call dbms_sql.close_cursor(c);
-    end
-    $$language plpgsql;
-
-    do $$
-    declare a numeric(7,2);
-    begin
-    call single_Row_insert(2,a);
-    end
-    $$;
-
-    select * from tab1;
-
-    do $$
-    declare a numeric(7,2) default 1.23;
-    begin
-    call single_Row_insert(2,a);
-    end
-    $$;
-
-    select * from tab1;
-    select * from tab1 where c2 is null;
-
-
-    do $$
-    declare a numeric(7,2);
-    begin
-    call single_Row_insert(0,a);   -- single_Row_insert(0, null)
-    end
-    $$;
-
-    select * from tab1;
-
-    do $$
-    declare a numeric(7,2) default 1.23;
-    begin
-    call single_Row_insert(0,a);  -- single_Row_insert(0, 1.23)
-    end
-    $$;
-
-    select * from tab1;
-    drop procedure single_Row_insert;
-    drop table tab1;
-
-    create table test(id text);
-    insert into test(id) values ('1'), (null);
-
-    -- should not to crash
-    do $$
-    declare
-    cursor int;
-    id text;
-    row_counter int := 0;
-    begin
-    cursor := dbms_sql.open_cursor();
-    call dbms_sql.parse(cursor, 'select id from test');
-    call dbms_sql.define_column(cursor, 1, 'id');
-    perform dbms_sql.execute(cursor);
-    while dbms_sql.fetch_rows(cursor) > 0 loop
-        row_counter = row_counter + 1;
-        raise notice 'process row #%', row_counter;
-        call dbms_sql.column_value(cursor, 1, id);
-        raise notice 'row id: `%`', id;
-    end loop;
-    call dbms_sql.close_cursor(cursor);
-    end;
-    $$;
-
-    drop table test;
+    SELECT throws_ok(
+        $$SELECT test_query_with_no_data();$$,
+        'no data found',
+        'Test when query has no result'
+    );
 
     -- Clean up and finish the test
     SELECT * FROM finish();
