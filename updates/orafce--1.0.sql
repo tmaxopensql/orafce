@@ -2698,7 +2698,6 @@ GRANT USAGE ON SCHEMA utl_file TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_assert TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_random TO PUBLIC;
 GRANT USAGE ON SCHEMA oracle TO PUBLIC;
--- GRANT USAGE ON SCHEMA plunit TO PUBLIC;
 
 /* orafce 3.3. related changes */
 ALTER FUNCTION dbms_assert.enquote_name ( character varying ) STRICT;
