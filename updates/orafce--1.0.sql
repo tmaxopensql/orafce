@@ -103,19 +103,19 @@ COMMENT ON FUNCTION oracle.set_nls_sort(text) IS '';
 
 CREATE FUNCTION oracle.instr(str text, patt text, start int, nth int)
 RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr4'
+AS 'MODULE_PATHNAME','orafce_instr4'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.instr(text, text, int, int) IS 'Search pattern in string';
 
 CREATE FUNCTION oracle.instr(str text, patt text, start int)
 RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr3'
+AS 'MODULE_PATHNAME','orafce_instr3'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.instr(text, text, int) IS 'Search pattern in string';
 
 CREATE FUNCTION oracle.instr(str text, patt text)
 RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr2'
+AS 'MODULE_PATHNAME','orafce_instr2'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.instr(text, text) IS 'Search pattern in string';
 
@@ -253,26 +253,6 @@ RETURNS varchar
 AS 'MODULE_PATHNAME', 'orafce_dump'
 LANGUAGE C;
 
-CREATE SCHEMA plvstr;
-
-CREATE FUNCTION plvstr.rvrs(str text, start int, _end int)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_rvrs'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plvstr.rvrs(text, int, int) IS 'Reverse string or part of string';
-
-CREATE FUNCTION plvstr.rvrs(str text, start int)
-RETURNS text
-AS $$ SELECT plvstr.rvrs($1,$2,NULL);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rvrs(text, int) IS 'Reverse string or part of string';
-
-CREATE FUNCTION plvstr.rvrs(str text)
-RETURNS text
-AS $$ SELECT plvstr.rvrs($1,1,NULL);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rvrs(text) IS 'Reverse string or part of string';
-
 CREATE FUNCTION oracle.lnnvl(bool)
 RETURNS bool
 AS 'MODULE_PATHNAME','ora_lnnvl'
@@ -282,13 +262,13 @@ COMMENT ON FUNCTION oracle.lnnvl(bool) IS '';
 -- can't overwrite PostgreSQL functions!!!!
 CREATE FUNCTION oracle.substr(str text, start int)
 RETURNS text
-AS 'MODULE_PATHNAME','oracle_substr2'
+AS 'MODULE_PATHNAME','orafce_substr2'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substr(text, int) IS 'Returns substring started on start_in to end';
 
 CREATE FUNCTION oracle.substr(str text, start int, len int)
 RETURNS text
-AS 'MODULE_PATHNAME','oracle_substr3'
+AS 'MODULE_PATHNAME','orafce_substr3'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substr(text, int, int) IS 'Returns substring started on start_in len chars';
 
@@ -1063,487 +1043,6 @@ LANGUAGE C VOLATILE STRICT;
 COMMENT ON FUNCTION dbms_pipe.unpack_message_record() IS 'Get record field from message';
 
 
-
--- follow package PLVdate emulation
-
-CREATE SCHEMA plvdate;
-
-CREATE FUNCTION plvdate.add_bizdays(date, int)
-RETURNS date
-AS 'MODULE_PATHNAME','plvdate_add_bizdays'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvdate.add_bizdays(date, int) IS 'Get the date created by adding <n> business days to a date';
-
-CREATE FUNCTION plvdate.nearest_bizday(date)
-RETURNS date
-AS 'MODULE_PATHNAME','plvdate_nearest_bizday'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvdate.nearest_bizday(date) IS 'Get the nearest business date to a given date, user defined';
-
-CREATE FUNCTION plvdate.next_bizday(date)
-RETURNS date
-AS 'MODULE_PATHNAME','plvdate_next_bizday'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvdate.next_bizday(date) IS 'Get the next business date from a given date, user defined';
-
-CREATE FUNCTION plvdate.bizdays_between(date, date)
-RETURNS int
-AS 'MODULE_PATHNAME','plvdate_bizdays_between'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvdate.bizdays_between(date, date) IS 'Get the number of business days between two dates';
-
-CREATE FUNCTION plvdate.prev_bizday(date)
-RETURNS date
-AS 'MODULE_PATHNAME','plvdate_prev_bizday'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvdate.prev_bizday(date) IS 'Get the previous business date from a given date';
-
-CREATE FUNCTION plvdate.isbizday(date)
-RETURNS bool
-AS 'MODULE_PATHNAME','plvdate_isbizday'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvdate.isbizday(date) IS 'Call this function to determine if a date is a business day';
-
-CREATE FUNCTION plvdate.set_nonbizday(text)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_set_nonbizday_dow'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.set_nonbizday(text) IS 'Set day of week as non bussines day';
-
-CREATE FUNCTION plvdate.unset_nonbizday(text)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_unset_nonbizday_dow'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.unset_nonbizday(text) IS 'Unset day of week as non bussines day';
-
-CREATE FUNCTION plvdate.set_nonbizday(date, bool)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_set_nonbizday_day'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.set_nonbizday(date, bool) IS 'Set day as non bussines day, if repeat is true, then day is nonbiz every year';
-
-CREATE FUNCTION plvdate.unset_nonbizday(date, bool)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_unset_nonbizday_day'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.unset_nonbizday(date, bool) IS 'Unset day as non bussines day, if repeat is true, then day is nonbiz every year';
-
-CREATE FUNCTION plvdate.set_nonbizday(date)
-RETURNS bool
-AS $$SELECT plvdate.set_nonbizday($1, false); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.set_nonbizday(date) IS 'Set day as non bussines day';
-
-CREATE FUNCTION plvdate.unset_nonbizday(date)
-RETURNS bool
-AS $$SELECT plvdate.unset_nonbizday($1, false); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.unset_nonbizday(date) IS 'Unset day as non bussines day';
-
-CREATE FUNCTION plvdate.use_easter(bool)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_use_easter'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.use_easter(bool) IS 'Easter Sunday and easter monday will be holiday';
-
-CREATE FUNCTION plvdate.use_easter()
-RETURNS bool
-AS $$SELECT plvdate.use_easter(true); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.use_easter() IS 'Easter Sunday and easter monday will be holiday';
-
-CREATE FUNCTION plvdate.unuse_easter()
-RETURNS bool
-AS $$SELECT plvdate.use_easter(false); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.unuse_easter() IS 'Easter Sunday and easter monday will not be holiday';
-
-CREATE FUNCTION plvdate.using_easter()
-RETURNS bool
-AS 'MODULE_PATHNAME','plvdate_using_easter'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.using_easter() IS 'Use easter?';
-
-CREATE FUNCTION plvdate.use_great_friday(bool)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_use_great_friday'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.use_great_friday(bool) IS 'Great Friday will be holiday';
-
-CREATE FUNCTION plvdate.use_great_friday()
-RETURNS bool
-AS $$SELECT plvdate.use_great_friday(true); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.use_great_friday() IS 'Great Friday will be holiday';
-
-CREATE FUNCTION plvdate.unuse_great_friday()
-RETURNS bool
-AS $$SELECT plvdate.use_great_friday(false); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.unuse_great_friday() IS 'Great Friday will not be holiday';
-
-CREATE FUNCTION plvdate.using_great_friday()
-RETURNS bool
-AS 'MODULE_PATHNAME','plvdate_using_great_friday'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.using_great_friday() IS 'Use Great Friday?';
-
-CREATE FUNCTION plvdate.include_start(bool)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_include_start'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.include_start(bool) IS 'Include starting date in bizdays_between calculation';
-
-CREATE FUNCTION plvdate.include_start()
-RETURNS bool
-AS $$SELECT plvdate.include_start(true); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.include_start() IS '';
-
-CREATE FUNCTION plvdate.noinclude_start()
-RETURNS bool
-AS $$SELECT plvdate.include_start(false); SELECT NULL::boolean;$$
-LANGUAGE SQL VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.noinclude_start() IS '';
-
-CREATE FUNCTION plvdate.including_start()
-RETURNS bool
-AS 'MODULE_PATHNAME','plvdate_including_start'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.including_start() IS '';
-
-CREATE FUNCTION plvdate.version()
-RETURNS cstring
-AS 'MODULE_PATHNAME','plvdate_version'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.version() IS '';
-
-CREATE FUNCTION plvdate.default_holidays(text)
-RETURNS void
-AS 'MODULE_PATHNAME','plvdate_default_holidays'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.default_holidays(text) IS 'Load calendar for some nations';
-
-CREATE FUNCTION plvdate.days_inmonth(date)
-RETURNS integer
-AS 'MODULE_PATHNAME','plvdate_days_inmonth'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.days_inmonth(date) IS 'Returns number of days in month';
-
-CREATE FUNCTION plvdate.isleapyear(date)
-RETURNS bool
-AS 'MODULE_PATHNAME','plvdate_isleapyear'
-LANGUAGE C VOLATILE STRICT;
-COMMENT ON FUNCTION plvdate.isleapyear(date) IS 'Is leap year';
-
-
--- PLVstr package
-
-
-CREATE FUNCTION plvstr.normalize(str text)
-RETURNS varchar
-AS 'MODULE_PATHNAME','plvstr_normalize'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.normalize(text) IS 'Replace white chars by space, replace  spaces by space';
-
-CREATE FUNCTION plvstr.is_prefix(str text, prefix text, cs bool)
-RETURNS bool
-AS 'MODULE_PATHNAME','plvstr_is_prefix_text'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.is_prefix(text, text, bool) IS 'Returns true, if prefix is prefix of str';
-
-CREATE FUNCTION plvstr.is_prefix(str text, prefix text)
-RETURNS bool
-AS $$ SELECT plvstr.is_prefix($1,$2,true);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.is_prefix(text, text) IS 'Returns true, if prefix is prefix of str';
-
-CREATE FUNCTION plvstr.is_prefix(str int, prefix int)
-RETURNS bool
-AS 'MODULE_PATHNAME','plvstr_is_prefix_int'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.is_prefix(int, int) IS 'Returns true, if prefix is prefix of str';
-
-CREATE FUNCTION plvstr.is_prefix(str bigint, prefix bigint)
-RETURNS bool
-AS 'MODULE_PATHNAME','plvstr_is_prefix_int64'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.is_prefix(bigint, bigint) IS 'Returns true, if prefix is prefix of str';
-
-CREATE FUNCTION plvstr.substr(str text, start int, len int)
-RETURNS varchar
-AS 'MODULE_PATHNAME','plvstr_substr3'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-COMMENT ON FUNCTION plvstr.substr(text, int, int) IS 'Returns substring started on start_in to end';
-
-CREATE FUNCTION plvstr.substr(str text, start int)
-RETURNS varchar
-AS 'MODULE_PATHNAME','plvstr_substr2'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-COMMENT ON FUNCTION plvstr.substr(text, int) IS 'Returns substring started on start_in to end';
-
-CREATE FUNCTION plvstr.instr(str text, patt text, start int, nth int)
-RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr4'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-COMMENT ON FUNCTION plvstr.instr(text, text, int, int) IS 'Search pattern in string';
-
-CREATE FUNCTION plvstr.instr(str text, patt text, start int)
-RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr3'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-COMMENT ON FUNCTION plvstr.instr(text, text, int) IS 'Search pattern in string';
-
-CREATE FUNCTION plvstr.instr(str text, patt text)
-RETURNS int
-AS 'MODULE_PATHNAME','plvstr_instr2'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-COMMENT ON FUNCTION plvstr.instr(text, text) IS 'Search pattern in string';
-
-CREATE FUNCTION plvstr.lpart(str text, div text, start int, nth int, all_if_notfound bool)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_lpart'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.lpart(text, text, int, int, bool) IS 'Call this function to return the left part of a string';
-
-CREATE FUNCTION plvstr.lpart(str text, div text, start int, nth int)
-RETURNS text
-AS $$ SELECT plvstr.lpart($1,$2, $3, $4, false); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.lpart(text, text, int, int) IS 'Call this function to return the left part of a string';
-
-CREATE FUNCTION plvstr.lpart(str text, div text, start int)
-RETURNS text
-AS $$ SELECT plvstr.lpart($1,$2, $3, 1, false); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.lpart(text, text, int) IS 'Call this function to return the left part of a string';
-
-CREATE FUNCTION plvstr.lpart(str text, div text)
-RETURNS text
-AS $$ SELECT plvstr.lpart($1,$2, 1, 1, false); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.lpart(text, text) IS 'Call this function to return the left part of a string';
-
-CREATE FUNCTION plvstr.rpart(str text, div text, start int, nth int, all_if_notfound bool)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_rpart'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rpart(text, text, int, int, bool) IS 'Call this function to return the right part of a string';
-
-CREATE FUNCTION plvstr.rpart(str text, div text, start int, nth int)
-RETURNS text
-AS $$ SELECT plvstr.rpart($1,$2, $3, $4, false); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rpart(text, text, int, int) IS 'Call this function to return the right part of a string';
-
-CREATE FUNCTION plvstr.rpart(str text, div text, start int)
-RETURNS text
-AS $$ SELECT plvstr.rpart($1,$2, $3, 1, false); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rpart(text, text, int) IS 'Call this function to return the right part of a string';
-
-CREATE FUNCTION plvstr.rpart(str text, div text)
-RETURNS text
-AS $$ SELECT plvstr.rpart($1,$2, 1, 1, false); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rpart(text, text) IS 'Call this function to return the right part of a string';
-
-CREATE FUNCTION plvstr.lstrip(str text, substr text, num int)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_lstrip'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.lstrip(text, text, int) IS 'Call this function to remove characters from the beginning ';
-
-CREATE FUNCTION plvstr.lstrip(str text, substr text)
-RETURNS text
-AS $$ SELECT plvstr.lstrip($1, $2, 1); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.lstrip(text, text) IS 'Call this function to remove characters from the beginning ';
-
-CREATE FUNCTION plvstr.rstrip(str text, substr text, num int)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_rstrip'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rstrip(text, text, int) IS 'Call this function to remove characters from the end';
-
-CREATE FUNCTION plvstr.rstrip(str text, substr text)
-RETURNS text
-AS $$ SELECT plvstr.rstrip($1, $2, 1); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.rstrip(text, text) IS 'Call this function to remove characters from the end';
-
-
-
-CREATE FUNCTION plvstr.swap(str text, replace text, start int, length int)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_swap'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plvstr.swap(text,text, int, int) IS 'Replace a substring in a string with a specified string';
-
-CREATE FUNCTION plvstr.swap(str text, replace text)
-RETURNS text
-AS $$ SELECT plvstr.swap($1,$2,1, NULL);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.swap(text,text) IS 'Replace a substring in a string with a specified string';
-
-CREATE FUNCTION plvstr.betwn(str text, start int, _end int, inclusive bool)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_betwn_i'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.betwn(text, int, int, bool) IS 'Find the Substring Between Start and End Locations';
-
-CREATE FUNCTION plvstr.betwn(str text, start int, _end int)
-RETURNS text
-AS $$ SELECT plvstr.betwn($1,$2,$3,true);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.betwn(text, int, int) IS 'Find the Substring Between Start and End Locations';
-
-CREATE FUNCTION plvstr.betwn(str text, start text, _end text, startnth int, endnth int, inclusive bool, gotoend bool)
-RETURNS text
-AS 'MODULE_PATHNAME','plvstr_betwn_c'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plvstr.betwn(text, text, text, int, int, bool, bool) IS 'Find the Substring Between Start and End Locations';
-
-CREATE FUNCTION plvstr.betwn(str text, start text, _end text)
-RETURNS text
-AS $$ SELECT plvstr.betwn($1,$2,$3,1,1,true,false);$$
-LANGUAGE SQL IMMUTABLE;
-COMMENT ON FUNCTION plvstr.betwn(text, text, text) IS 'Find the Substring Between Start and End Locations';
-
-CREATE FUNCTION plvstr.betwn(str text, start text, _end text, startnth int, endnth int)
-RETURNS text
-AS $$ SELECT plvstr.betwn($1,$2,$3,$4,$5,true,false);$$
-LANGUAGE SQL IMMUTABLE;
-COMMENT ON FUNCTION plvstr.betwn(text, text, text, int, int) IS 'Find the Substring Between Start and End Locations';
-
-CREATE SCHEMA plvchr;
-
-CREATE FUNCTION plvchr.nth(str text, n int)
-RETURNS text
-AS 'MODULE_PATHNAME','plvchr_nth'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.nth(text, int) IS 'Call this function to return the Nth character in a string';
-
-CREATE FUNCTION plvchr.first(str text)
-RETURNS varchar
-AS 'MODULE_PATHNAME','plvchr_first'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.first(text) IS 'Call this function to return the first character in a string';
-
-CREATE FUNCTION plvchr.last(str text)
-RETURNS varchar
-AS 'MODULE_PATHNAME','plvchr_last'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.last(text) IS 'Call this function to return the last character in a string';
-
-CREATE FUNCTION plvchr._is_kind(str text, kind int)
-RETURNS bool
-AS 'MODULE_PATHNAME','plvchr_is_kind_a'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr._is_kind(text, int) IS '';
-
-CREATE FUNCTION plvchr._is_kind(c int, kind int)
-RETURNS bool
-AS 'MODULE_PATHNAME','plvchr_is_kind_i'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr._is_kind(int, int) IS '';
-
-CREATE FUNCTION plvchr.is_blank(c int)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 1);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_blank(int) IS '';
-
-CREATE FUNCTION plvchr.is_blank(c text)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 1);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_blank(text) IS '';
-
-CREATE FUNCTION plvchr.is_digit(c int)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 2);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_digit(int) IS '';
-
-CREATE FUNCTION plvchr.is_digit(c text)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 2);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_digit(text) IS '';
-
-CREATE FUNCTION plvchr.is_quote(c int)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 3);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_quote(int) IS '';
-
-CREATE FUNCTION plvchr.is_quote(c text)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 3);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_quote(text) IS '';
-
-CREATE FUNCTION plvchr.is_other(c int)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 4);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_other(int) IS '';
-
-CREATE FUNCTION plvchr.is_other(c text)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 4);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_other(text) IS '';
-
-CREATE FUNCTION plvchr.is_letter(c int)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 5);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_letter(int) IS '';
-
-CREATE FUNCTION plvchr.is_letter(c text)
-RETURNS BOOL
-AS $$ SELECT plvchr._is_kind($1, 5);$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.is_letter(text) IS '';
-
-CREATE FUNCTION plvchr.char_name(c text)
-RETURNS varchar
-AS 'MODULE_PATHNAME','plvchr_char_name'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.char_name(text) IS '';
-
-CREATE FUNCTION plvstr.left(str text, n int)
-RETURNS varchar
-AS 'MODULE_PATHNAME', 'plvstr_left'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.left(text, int) IS 'Returns firs num_in charaters. You can use negative num_in';
-
-CREATE FUNCTION plvstr.right(str text, n int)
-RETURNS varchar
-AS 'MODULE_PATHNAME','plvstr_right'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvstr.right(text, int) IS 'Returns last num_in charaters. You can use negative num_ni';
-
-CREATE FUNCTION plvchr.quoted1(str text)
-RETURNS varchar
-AS $$SELECT ''''||$1||'''';$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.quoted1(text) IS E'Quoted text between ''';
-
-CREATE FUNCTION plvchr.quoted2(str text)
-RETURNS varchar
-AS $$SELECT '"'||$1||'"';$$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.quoted2(text) IS 'Quoted text between "';
-
-CREATE FUNCTION plvchr.stripped(str text, char_in text)
-RETURNS varchar
-AS $$ SELECT TRANSLATE($1, 'A'||$2, 'A'); $$
-LANGUAGE SQL IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvchr.stripped(text, text) IS 'Strips a string of all instances of the specified characters';
-
 -- dbms_alert
 
 CREATE SCHEMA dbms_alert;
@@ -1608,55 +1107,6 @@ AS 'MODULE_PATHNAME','dbms_alert_signal'
 LANGUAGE C SECURITY DEFINER;
 COMMENT ON FUNCTION dbms_alert.signal(text, text) IS 'Emit signal to all recipients';
 
-CREATE SCHEMA plvsubst;
-
-CREATE FUNCTION plvsubst.string(template_in text, values_in text[], subst text)
-RETURNS text
-AS 'MODULE_PATHNAME','plvsubst_string_array'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plvsubst.string(text, text[], text) IS 'Scans a string for all instances of the substitution keyword and replace it with the next value in the substitution values list';
-
-CREATE FUNCTION plvsubst.string(template_in text, values_in text[])
-RETURNS text
-AS $$SELECT plvsubst.string($1,$2, NULL);$$
-LANGUAGE SQL STRICT VOLATILE;
-COMMENT ON FUNCTION plvsubst.string(text, text[]) IS 'Scans a string for all instances of the substitution keyword and replace it with the next value in the substitution values list';
-
-CREATE FUNCTION plvsubst.string(template_in text, vals_in text, delim_in text, subst_in text)
-RETURNS text
-AS 'MODULE_PATHNAME','plvsubst_string_string'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plvsubst.string(text, text, text, text) IS 'Scans a string for all instances of the substitution keyword and replace it with the next value in the substitution values list';
-
-CREATE FUNCTION plvsubst.string(template_in text, vals_in text)
-RETURNS text
-AS 'MODULE_PATHNAME','plvsubst_string_string'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plvsubst.string(text, text) IS 'Scans a string for all instances of the substitution keyword and replace it with the next value in the substitution values list';
-
-CREATE FUNCTION plvsubst.string(template_in text, vals_in text, delim_in text)
-RETURNS text
-AS 'MODULE_PATHNAME','plvsubst_string_string'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plvsubst.string(text, text, text) IS 'Scans a string for all instances of the substitution keyword and replace it with the next value in the substitution values list';
-
-CREATE FUNCTION plvsubst.setsubst(str text)
-RETURNS void
-AS 'MODULE_PATHNAME','plvsubst_setsubst'
-LANGUAGE C STRICT VOLATILE;
-COMMENT ON FUNCTION plvsubst.setsubst(text) IS 'Change the substitution keyword';
-
-CREATE FUNCTION plvsubst.setsubst()
-RETURNS void
-AS 'MODULE_PATHNAME','plvsubst_setsubst_default'
-LANGUAGE C STRICT VOLATILE;
-COMMENT ON FUNCTION plvsubst.setsubst() IS 'Change the substitution keyword to default %s';
-
-CREATE FUNCTION plvsubst.subst()
-RETURNS text
-AS 'MODULE_PATHNAME','plvsubst_subst'
-LANGUAGE C STRICT VOLATILE;
-COMMENT ON FUNCTION plvsubst.subst() IS 'Retrieve the current substitution keyword';
 
 CREATE SCHEMA dbms_utility;
 
@@ -1678,16 +1128,6 @@ AS 'MODULE_PATHNAME','dbms_utility_get_time'
 LANGUAGE C VOLATILE;
 COMMENT ON FUNCTION dbms_utility.get_time() IS 'Returns the number of hundredths of seconds that have elapsed since point in time';
 
-/*
-CREATE SCHEMA plvlex;
-
-CREATE FUNCTION plvlex.tokens(IN str text, IN skip_spaces bool, IN qualified_names bool,
-OUT pos int, OUT token text, OUT code int, OUT class text, OUT separator text, OUT mod text)
-RETURNS SETOF RECORD
-AS 'MODULE_PATHNAME','plvlex_tokens'
-LANGUAGE C IMMUTABLE STRICT;
-COMMENT ON FUNCTION plvlex.tokens(text,bool,bool) IS 'Parse SQL string';
-*/
 
 CREATE SCHEMA utl_file;
 CREATE DOMAIN utl_file.file_type integer;
@@ -1927,115 +1367,6 @@ AS 'MODULE_PATHNAME','dbms_assert_qualified_sql_name'
 LANGUAGE C IMMUTABLE;
 COMMENT ON FUNCTION dbms_assert.object_name(varchar) IS 'Verify input string is a qualified sql name.';
 
-CREATE SCHEMA plunit;
-
-CREATE FUNCTION plunit.assert_true(condition boolean)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_true'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_true(condition boolean) IS 'Asserts that the condition is true';
-
-CREATE FUNCTION plunit.assert_true(condition boolean, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_true_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_true(condition boolean, message varchar) IS 'Asserts that the condition is true';
-
-CREATE FUNCTION plunit.assert_false(condition boolean)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_false'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_false(condition boolean) IS 'Asserts that the condition is false';
-
-CREATE FUNCTION plunit.assert_false(condition boolean, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_false_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_false(condition boolean, message varchar) IS 'Asserts that the condition is false';
-
-CREATE FUNCTION plunit.assert_null(actual anyelement)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_null'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_null(actual anyelement) IS 'Asserts that the actual is null';
-
-CREATE FUNCTION plunit.assert_null(actual anyelement, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_null_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_null(actual anyelement, message varchar) IS 'Asserts that the condition is null';
-
-CREATE FUNCTION plunit.assert_not_null(actual anyelement)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_not_null'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_not_null(actual anyelement) IS 'Asserts that the actual is not null';
-
-CREATE FUNCTION plunit.assert_not_null(actual anyelement, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_not_null_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_not_null(actual anyelement, message varchar) IS 'Asserts that the condition is not null';
-
-CREATE FUNCTION plunit.assert_equals(expected anyelement, actual anyelement)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_equals'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_equals(expected anyelement, actual anyelement) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.assert_equals(expected anyelement, actual anyelement, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_equals_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_equals(expected anyelement, actual anyelement, message varchar) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.assert_equals(expected double precision, actual double precision, "range" double precision)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_equals_range'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_equals(expected double precision, actual double precision, "range" double precision) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.assert_equals(expected double precision, actual double precision, "range" double precision, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_equals_range_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_equals(expected double precision, actual double precision, "range" double precision, message varchar) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.assert_not_equals(expected anyelement, actual anyelement)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_not_equals'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_not_equals(expected anyelement, actual anyelement) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.assert_not_equals(expected anyelement, actual anyelement, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_not_equals_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_not_equals(expected anyelement, actual anyelement, message varchar) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.assert_not_equals(expected double precision, actual double precision, "range" double precision)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_not_equals_range'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_equals(expected double precision, actual double precision, "range" double precision) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.assert_not_equals(expected double precision, actual double precision, "range" double precision, message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_assert_not_equals_range_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.assert_not_equals(expected double precision, actual double precision, "range" double precision, message varchar) IS 'Asserts that expected and actual are equal';
-
-CREATE FUNCTION plunit.fail()
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_fail'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.fail() IS 'Immediately fail.';
-
-CREATE FUNCTION plunit.fail(message varchar)
-RETURNS void
-AS 'MODULE_PATHNAME','plunit_fail_message'
-LANGUAGE C IMMUTABLE;
-COMMENT ON FUNCTION plunit.fail(message varchar) IS 'Immediately fail.';
 
 -- dbms_random
 CREATE SCHEMA dbms_random;
@@ -2387,13 +1718,13 @@ $$;
 -- these are 'byte' versions of corresponsing text/varchar functions
 
 CREATE OR REPLACE FUNCTION oracle.substrb(oracle.varchar2, integer, integer) RETURNS oracle.varchar2
-AS 'MODULE_PATHNAME','oracle_substrb3'
+AS 'MODULE_PATHNAME','orafce_substrb3'
 LANGUAGE C
 STRICT IMMUTABLE PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substrb(oracle.varchar2, integer, integer) IS 'extracts specified number of bytes from the input varchar2 string starting at the specified byte position (1-based) and returns as a varchar2 string';
 
 CREATE OR REPLACE FUNCTION oracle.substrb(oracle.varchar2, integer) RETURNS oracle.varchar2
-AS 'MODULE_PATHNAME','oracle_substrb2'
+AS 'MODULE_PATHNAME','orafce_substrb2'
 LANGUAGE C
 STRICT IMMUTABLE PARALLEL SAFE;
 COMMENT ON FUNCTION oracle.substrb(oracle.varchar2, integer) IS 'extracts specified number of bytes from the input varchar2 string starting at the specified byte position (1-based) and returns as a varchar2 string';
@@ -3360,19 +2691,13 @@ STRICT IMMUTABLE PARALLEL SAFE
 
 GRANT USAGE ON SCHEMA dbms_pipe TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_alert TO PUBLIC;
-GRANT USAGE ON SCHEMA plvdate TO PUBLIC;
-GRANT USAGE ON SCHEMA plvstr TO PUBLIC;
-GRANT USAGE ON SCHEMA plvchr TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_output TO PUBLIC;
-GRANT USAGE ON SCHEMA plvsubst TO PUBLIC;
 GRANT SELECT ON dbms_pipe.db_pipes to PUBLIC;
 GRANT USAGE ON SCHEMA dbms_utility TO PUBLIC;
---GRANT USAGE ON SCHEMA plvlex TO PUBLIC;
 GRANT USAGE ON SCHEMA utl_file TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_assert TO PUBLIC;
 GRANT USAGE ON SCHEMA dbms_random TO PUBLIC;
 GRANT USAGE ON SCHEMA oracle TO PUBLIC;
-GRANT USAGE ON SCHEMA plunit TO PUBLIC;
 
 /* orafce 3.3. related changes */
 ALTER FUNCTION dbms_assert.enquote_name ( character varying ) STRICT;

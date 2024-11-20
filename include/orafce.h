@@ -36,10 +36,6 @@ typedef enum orafce_compatibility
 	ORAFCE_COMPATIBILITY_ORAFCE,
 } orafce_compatibility;
 
-extern int ora_instr(text *txt, text *pattern, int start, int nth);
-extern int ora_mb_strlen(text *str, char **sizes, int **positions);
-extern int ora_mb_strlen1(text *str);
-
 extern char *nls_date_format;
 extern char *orafce_timezone;
 extern char *orafce_umask_str;
