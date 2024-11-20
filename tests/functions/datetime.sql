@@ -13,38 +13,38 @@ BEGIN;
 
     -- Write tests
     -- Test add_months
-    SELECT is(add_months(date '2003-08-01', 3), '2003-11-01');
-    SELECT is(add_months(date '2003-08-01', -3), '2003-05-01');
-    SELECT is(add_months(date '2003-08-21', -3), '2003-05-21');
-    SELECT is(add_months(date '2003-01-31', 1), '2003-02-28', 'Test last day of Jan. to Feb.');
-    SELECT is(add_months(date '2008-02-28', 1), '2008-03-28', 'Test 28th of Feb. to Mar. in leap year');
-    SELECT is(add_months(date '2008-02-29', 1), '2008-03-31', 'Test last day of Feb to Mar. in leap year');
-    SELECT is(add_months(date '2008-01-31', 12),'2009-01-31', 'Test adding one year');
-    SELECT is(add_months(date '2008-01-31', -12), '2007-01-31', 'Test subtracting one year');
-    SELECT is(add_months(date '2008-01-31', 95903), '9999-12-31', 'Test maximum date');
-    SELECT is(add_months(date '2008-01-31', -80640), '4712-01-31 BC', 'Text minimum date');
+    SELECT is(add_months(date '2003-08-01', 3), '2003-11-01', 'Test#1 adding positive months');
+    SELECT is(add_months(date '2003-08-01', -3), '2003-05-01', 'Test#1 adding negative months');
+    SELECT is(add_months(date '2003-08-21', -3), '2003-05-21', 'Test#1 adding negative months with non-first day');
+    SELECT is(add_months(date '2003-01-31', 1), '2003-02-28', 'Test#1 last day of Jan. to Feb.');
+    SELECT is(add_months(date '2008-02-28', 1), '2008-03-28', 'Test#1 28th of Feb. to Mar. in leap year');
+    SELECT is(add_months(date '2008-02-29', 1), '2008-03-31', 'Test#1 last day of Feb to Mar. in leap year');
+    SELECT is(add_months(date '2008-01-31', 12),'2009-01-31', 'Test#1 adding one year');
+    SELECT is(add_months(date '2008-01-31', -12), '2007-01-31', 'Test#1 subtracting one year');
+    SELECT is(add_months(date '2008-01-31', 95903), '9999-12-31', 'Test#1 maximum date');
+    SELECT is(add_months(date '2008-01-31', -80640), '4712-01-31 BC', 'Test#1 minimum date');
 
-    SELECT is(add_months('2003-08-01 10:12:21', 3), '2003-11-01 10:12:21');
-    SELECT is(add_months('2003-08-01 10:21:21', -3), '2003-05-01 10:21:21');
-    SELECT is(add_months('2003-08-21 12:21:21', -3), '2003-05-21 12:21:21');
-    SELECT is(add_months('2003-01-31 01:12:45', 1), '2003-02-28 01:12:45');
-    SELECT is(add_months('2008-02-28 02:12:12', 1), '2008-03-28 02:12:12');
-    SELECT is(add_months('2008-02-29 12:12:12', 1), '2008-03-31 12:12:12');
-    SELECT is(add_months('2008-01-31 11:11:21', 12), '2009-01-31 11:11:21');
-    SELECT is(add_months('2008-01-31 11:21:21', -12),'2007-01-31 11:21:21');
-    SELECT is(add_months('2008-01-31 12:12:12', 95903), '9999-12-31 12:12:12');
-    SELECT is(add_months('2008-01-31 11:32:12', -80640), '4712-01-31 11:32:12 BC');
+    SELECT is(add_months('2003-08-01 10:12:21', 3), '2003-11-01 10:12:21', 'Test#2 adding positive months'); 
+    SELECT is(add_months('2003-08-01 10:21:21', -3), '2003-05-01 10:21:21', 'Test#2 adding negative months');  
+    SELECT is(add_months('2003-08-21 12:21:21', -3), '2003-05-21 12:21:21', 'Test#2 adding negative months with non-first day');
+    SELECT is(add_months('2003-01-31 01:12:45', 1), '2003-02-28 01:12:45', 'Test#2 last day of Jan. to Feb.');
+    SELECT is(add_months('2008-02-28 02:12:12', 1), '2008-03-28 02:12:12', 'Test#2 28th of Feb. to Mar. in leap year');
+    SELECT is(add_months('2008-02-29 12:12:12', 1), '2008-03-31 12:12:12', 'Test#2 last day of Feb to Mar. in leap year');
+    SELECT is(add_months('2008-01-31 11:11:21', 12), '2009-01-31 11:11:21', 'Test#2 adding one year');
+    SELECT is(add_months('2008-01-31 11:21:21', -12),'2007-01-31 11:21:21' , 'Test#2 subtracting one year');
+    SELECT is(add_months('2008-01-31 12:12:12', 95903), '9999-12-31 12:12:12', 'Test#2 maximum date');
+    SELECT is(add_months('2008-01-31 11:32:12', -80640), '4712-01-31 11:32:12 BC', 'Test#2 minimum date');
 
     -- Test last_day
-    SELECT is(last_day(date '2007-03-01'), '2007-03-31');
-    SELECT is(last_day(date '2007-04-01'), '2007-04-30');
-    SELECT is(last_day(date '2007-02-01'), '2007-02-28', 'Test non leap year');
-    SELECT is(last_day(date '2008-02-01'), '2008-02-29', 'Test leap year');
+    SELECT is(last_day(date '2007-03-01'), '2007-03-31', 'Test#1 last day of March');
+    SELECT is(last_day(date '2007-04-01'), '2007-04-30', 'Test#1 last day of April');
+    SELECT is(last_day(date '2007-02-01'), '2007-02-28', 'Test#1 last day of non leap year');
+    SELECT is(last_day(date '2008-02-01'), '2008-02-29', 'Test#1 last day of leap year');
 
-    SELECT is(last_day('2007-03-01 12:21:33'), '2007-03-31 12:21:33');
-    SELECT is(last_day('2007-04-01 12:21:33'), '2007-04-30 12:21:33');
-    SELECT is(last_day('2007-02-01 12:21:33'), '2007-02-28 12:21:33');
-    SELECT is(last_day('2008-02-01 12:21:33'), '2008-02-29 12:21:33');
+    SELECT is(last_day('2007-03-01 12:21:33'), '2007-03-31 12:21:33', 'Test#2 last day of March');
+    SELECT is(last_day('2007-04-01 12:21:33'), '2007-04-30 12:21:33', 'Test#2 last day of April');
+    SELECT is(last_day('2007-02-01 12:21:33'), '2007-02-28 12:21:33', 'Test#2 last day of non leap year');
+    SELECT is(last_day('2008-02-01 12:21:33'), '2008-02-29 12:21:33', 'Test#2 last day of leap year');
 
     -- Test next_day
     SELECT is(next_day(date '2003-08-06', 'WEDNESDAY'), '2003-08-13');
